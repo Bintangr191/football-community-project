@@ -1,0 +1,36 @@
+# Robot Framework Test Reports
+integration-tests/log.html
+integration-tests/report.html
+integration-tests/output.xml
+*.html
+*.xml
+
+# Python Virtual Environment (Integration Tests)
+integration-tests/venv/
+integration-tests/env/
+venv/
+env/
+
+# Python Cache
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Environment Variables
+.env
+.env.*
+!.env.example
+
+# OS / Editor Files
+.DS_Store
+.idea/
+.vscode/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Polyrepo — service sudah dipindah ke repo terpisah, jangan ikut ter-track di sini
+api-gateway/
+services/

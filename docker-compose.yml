@@ -1,0 +1,254 @@
+services:
+
+  mysql:
+    image: mysql:8.4
+
+    container_name: football-mysql
+
+    restart: always
+
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: football_auth
+      MYSQL_USER: football
+      MYSQL_PASSWORD: football123
+
+    ports:
+      - "3306:3306"
+
+    volumes:
+      - mysql-data:/var/lib/mysql
+
+    networks:
+      - football-network
+    
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-proot"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+  
+  rabbitmq:
+    image: rabbitmq:3-management
+
+    container_name: football-rabbitmq
+
+    restart: always
+
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+
+    environment:
+      RABBITMQ_DEFAULT_USER: admin
+      RABBITMQ_DEFAULT_PASS: admin123
+
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
+
+    networks:
+      - football-network
+
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "check_running"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  mongodb:
+    image: mongo:8.0
+
+    container_name: football-mongodb
+
+    restart: always
+
+    command: >
+      mongod --replSet rs0 --bind_ip_all
+
+    ports:
+      - "27017:27017"
+
+    volumes:
+      - mongo-data:/data/db
+
+    networks:
+      - football-network
+
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  mongodb-init:
+    image: mongo:8.0
+
+    container_name: football-mongodb-init
+
+    depends_on:
+      mongodb:
+        condition: service_healthy
+
+    restart: "no"
+
+    networks:
+      - football-network
+
+    entrypoint: >
+      bash -c "
+        sleep 5 &&
+        mongosh --host mongodb:27017 --eval '
+        rs.initiate({
+          _id:\"rs0\",
+          members:[
+            {_id:0,host:\"mongodb:27017\"}
+          ]
+        })
+        ' || true
+      "
+
+  # =============================================================
+  # CATATAN: Semua service di bawah menggunakan path relatif ke
+  # folder parent (../) karena masing-masing adalah repo terpisah.
+  #
+  # Struktur folder yang diharapkan:
+  #   parent-folder/
+  #   ├── football-community-be/   ← repo ini (berisi docker-compose.yml)
+  #   ├── api-gateway/
+  #   ├── auth-service/
+  #   ├── football-service/
+  #   ├── forum-service/
+  #   └── notification-service/
+  #
+  # Pastikan semua repo sudah di-clone sebelum menjalankan docker-compose up
+  # =============================================================
+
+  auth-service:
+    build:
+      context: ../auth-service
+      dockerfile: Dockerfile
+
+    container_name: football-auth
+
+    restart: always
+
+    depends_on:
+      mysql:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+
+    ports:
+      - "3001:3001"
+
+    env_file:
+      - ../auth-service/.env
+
+    networks:
+      - football-network
+
+  football-service:
+    build:
+      context: ../football-service
+      dockerfile: Dockerfile
+
+    container_name: football-service
+
+    restart: always
+
+    depends_on:
+      mongodb:
+        condition: service_healthy
+
+    ports:
+      - "3002:3002"
+
+    env_file:
+      - ../football-service/.env
+
+    networks:
+      - football-network
+
+  forum-service:
+    build:
+      context: ../forum-service
+      dockerfile: Dockerfile
+
+    container_name: forum-service
+
+    restart: always
+
+    depends_on:
+      mongodb:
+        condition: service_healthy
+
+      rabbitmq:
+        condition: service_healthy
+
+    ports:
+      - "3003:3003"
+
+    env_file:
+      - ../forum-service/.env
+
+    networks:
+      - football-network
+
+  notification-service:
+    build:
+      context: ../notification-service
+      dockerfile: Dockerfile
+
+    container_name: notification-service
+
+    restart: always
+
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+
+    ports:
+      - "3004:3004"
+
+    env_file:
+      - ../notification-service/.env
+
+    networks:
+      - football-network
+  
+  api-gateway:
+    build:
+      context: ../api-gateway
+      dockerfile: Dockerfile
+
+    container_name: football-api-gateway
+
+    restart: always
+
+    depends_on:
+      auth-service:
+        condition: service_started
+
+      football-service:
+        condition: service_started
+
+      forum-service:
+        condition: service_started
+
+    ports:
+      - "3000:3000"
+
+    env_file:
+      - ../api-gateway/.env
+
+    networks:
+      - football-network
+
+networks:
+  football-network:
+    driver: bridge
+
+volumes:
+  mysql-data:
+  mongo-data:
+  rabbitmq-data:
