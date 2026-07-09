@@ -1,50 +1,74 @@
-# ⚽ Football Community App — Backend
+# ⚽ Football Community App
 
 Backend untuk aplikasi komunitas sepak bola berbasis **microservice architecture**. Setiap fitur besar dipisah menjadi service mandiri yang berkomunikasi melalui sebuah **API Gateway** terpusat.
+
+---
+
+## 📑 Daftar Isi
+
+- [Arsitektur Sistem](#-arsitektur-sistem)
+- [Struktur Direktori (Polyrepo)](#️-struktur-direktori-polyrepo)
+- [Deskripsi Service](#-deskripsi-service)
+  - [Auth Service](#-auth-service-3001)
+  - [Football Service](#-football-service-3002)
+  - [Forum Service](#-forum-service-3003)
+  - [Notification Service](#-notification-service-3004)
+  - [Report Service](#-report-service-3005)
+  - [API Gateway](#-api-gateway-3000)
+- [Cara Menjalankan (Docker)](#-cara-menjalankan-docker--direkomendasikan)
+- [Konfigurasi Environment](#️-konfigurasi-environment)
+- [Port & Service Map](#-port--service-map)
+- [Menjalankan Tests](#-menjalankan-tests)
+- [Development Tanpa Docker](#-development-tanpa-docker--mode-manual)
+- [Keamanan](#️-keamanan)
+- [Contoh Alur Request](#-contoh-alur-request)
+- [Tech Stack](#️-tech-stack)
+- [Contributing](#-contributing)
+- [License](#-license)
 
 ---
 
 ## 📐 Arsitektur Sistem
 
 ```
-                        ┌─────────────────────────────┐
-                        │        CLIENT (Mobile/Web)   │
-                        └──────────────┬──────────────┘
-                                       │ HTTP Request
-                                       ▼
-                        ┌─────────────────────────────┐
-                        │        API Gateway           │
-                        │     (Hono · Port 3000)       │
-                        │                              │
-                        │  • JWT Auth Middleware        │
-                        │  • Rate Limiting (100/min)   │
-                        │  • CORS Handling             │
-                        │  • Reverse Proxy             │
-                        └──────┬──────┬──────┬─────────┘
-                               │      │      │
-              ┌────────────────┘      │      └─────────────────┐
-              │                       │                         │
-              ▼                       ▼                         ▼
-  ┌─────────────────┐   ┌─────────────────────┐   ┌────────────────────┐
-  │  Auth Service   │   │  Football Service   │   │   Forum Service    │
-  │  Port :3001     │   │  Port :3002         │   │   Port :3003       │
-  │  DB: MySQL      │   │  DB: MongoDB        │   │   DB: MongoDB      │
-  │  + RabbitMQ     │   │  + External API     │   │   + RabbitMQ       │
-  └────────┬────────┘   └─────────────────────┘   └──────────┬─────────┘
-           │                                                   │
-           │ publish → otp_send                  publish msgs │
-           └────────────────────┬────────────────────────────┘
-                                ▼
-                ┌───────────────────────────────┐
-                │     Notification Service       │
-                │     Port :3004                 │
-                │  (RabbitMQ Consumer)           │
-                │  Kirim email OTP via SMTP      │
-                └───────────────────────────────┘
+                        ┌───────────────────────────────┐
+                        │       CLIENT (Mobile/Web)      │
+                        └───────────────┬─────────────────┘
+                                        │ HTTP Request
+                                        ▼
+                        ┌───────────────────────────────┐
+                        │          API Gateway           │
+                        │       (Hono · Port 3000)       │
+                        │                                 │
+                        │  • JWT Auth Middleware          │
+                        │  • Rate Limiting (100/min)      │
+                        │  • CORS Handling                │
+                        │  • Reverse Proxy                │
+                        └───┬──────────┬──────────┬───────┬──┘
+                            │          │          │       │
+              ┌─────────────┘          │          │       └───────────────┐
+              │                        │          │                       │
+              ▼                        ▼          ▼                       ▼
+  ┌──────────────────┐   ┌──────────────────┐  ┌──────────────────┐  ┌──────────────────┐
+  │   Auth Service    │   │ Football Service │  │  Forum Service    │  │  Report Service   │
+  │   Port :3001      │   │  Port :3002      │  │  Port :3003       │  │  Port :3005       │
+  │   DB: MySQL       │   │  DB: MongoDB     │  │  DB: MongoDB      │  │  DB: MongoDB      │
+  │   + RabbitMQ       │   │  + External API │  │  + RabbitMQ       │  │                    │
+  └─────────┬──────────┘   └──────────────────┘  └─────────┬─────────┘  └────────────────────┘
+            │                                                │
+            │ publish → otp_send                publish msgs │
+            └──────────────────────┬────────────────────────┘
+                                   ▼
+                   ┌───────────────────────────────┐
+                   │      Notification Service      │
+                   │       Port :3004                │
+                   │     (RabbitMQ Consumer)         │
+                   │   Kirim email OTP via SMTP      │
+                   └───────────────────────────────┘
 
   Infrastructure:
   ┌──────────────────────────────────────────────────────────┐
-  │   MySQL :3306  |  MongoDB :27017  |  RabbitMQ :5672      │
+  │   MySQL :3306  |  MongoDB :27017  |  RabbitMQ :5672       │
   └──────────────────────────────────────────────────────────┘
 ```
 
@@ -52,18 +76,23 @@ Backend untuk aplikasi komunitas sepak bola berbasis **microservice architecture
 
 ## 🗂️ Struktur Direktori (Polyrepo)
 
-Proyek ini menggunakan pendekatan **Polyrepo**, di mana setiap service berada di repositori terpisah. Repositori utama ini hanya berisi file orchestrasi (`docker-compose.yml`) dan integrasi tes.
+Proyek ini menggunakan pendekatan **Polyrepo**, di mana setiap service berada di repositori terpisah. Repositori utama ini hanya berisi file orkestrasi (`docker-compose.yml`) dan integration test.
 
 Struktur folder yang diharapkan saat di-clone di komputer Anda:
+
 ```text
 parent-folder/
 ├── football-community-be/      ← Repositori UTAMA ini (docker-compose & tests)
+├── kickoff/                    ← Repositori Frontend Mobile (Expo)
 ├── api-gateway/                ← Repositori API Gateway
 ├── auth-service/               ← Repositori Auth Service
 ├── football-service/           ← Repositori Football Service
 ├── forum-service/              ← Repositori Forum Service
+├── report-service/             ← Repositori Report Service
 └── notification-service/       ← Repositori Notification Service
 ```
+
+> Semua file `.env` service berada langsung di root masing-masing repo (`auth-service/.env`, bukan `auth-service/services/.env`).
 
 ---
 
@@ -166,6 +195,31 @@ Mengirim notifikasi email (OTP) melalui antrian RabbitMQ. Service ini **tidak di
 
 ---
 
+### 📊 Report Service (`:3005`)
+
+Mengelola laporan terkait postingan, komentar, atau pengguna dalam komunitas.
+
+- **Database:** MongoDB (via Prisma)
+
+| Endpoint | Method | Keterangan |
+|---|---|---|
+| `/reports` | POST | Buat laporan baru |
+| `/reports` | GET | Ambil daftar laporan (feed) |
+| `/reports/me` | GET | Laporan milik pengguna yang sedang login |
+| `/reports/:id` | GET | Detail laporan |
+| `/reports/:id` | PUT | Edit laporan |
+| `/reports/:id` | DELETE | Hapus laporan |
+| `/reports/:id/status` | PATCH | Update status laporan (contoh: resolved) |
+| `/reports/:id/vote` | POST | Upvote / downvote laporan |
+| `/reports/:id/comments` | POST | Tambah komentar ke laporan |
+| `/reports/:id/comments` | GET | Ambil semua komentar di sebuah laporan |
+| `/reports/comments/:commentId` | DELETE | Hapus komentar |
+
+**Fitur Lanjutan:**
+- **Internal Sync Endpoint** — `PATCH /internal/users/avatar` untuk sinkronisasi avatar dari auth-service.
+
+---
+
 ### 🚦 API Gateway (`:3000`)
 
 Satu-satunya entry point bagi klien. Bertanggung jawab atas:
@@ -180,21 +234,62 @@ Satu-satunya entry point bagi klien. Bertanggung jawab atas:
 
 **Peta Route:**
 
-| Route Gateway | Diteruskan ke |
-|---|---|
-| `/auth/*` | Auth Service `:3001` |
-| `/upload/*` | Auth Service `:3001` |
-| `/football/*` | Football Service `:3002` |
-| `/forum/*` | Forum Service `:3003` |
+| Route Gateway | Diteruskan ke | Butuh JWT? |
+|---|---|---|
+| `/auth/*` | Auth Service `:3001` | ❌ Tidak |
+| `/upload/*` | Auth Service `:3001` | ❌ Tidak |
+| `/football/*` | Football Service `:3002` | ✅ Ya |
+| `/forum/*` | Forum Service `:3003` | ✅ Ya |
+| `/report/*` | Report Service `:3005` | ✅ Ya |
 
-> ⚠️ `/auth/*` dan `/upload/*` tidak memerlukan JWT. Semua route lain (`/football/*`, `/forum/*`) **wajib menyertakan** `Authorization: Bearer <token>`.
+> ⚠️ Semua route yang butuh JWT wajib menyertakan header `Authorization: Bearer <token>`.
 
 ---
 
 ## 🚀 Cara Menjalankan (Docker — Direkomendasikan)
 
 ### Prasyarat
-- [Docker Desktop](https://www.docker.com/products/docker-desktop/) terinstal dan berjalan
+- **Windows / Mac:** [Docker Desktop](https://www.docker.com/products/docker-desktop/) terinstal dan berjalan
+- **Linux:** Docker Engine + Docker Compose plugin (Docker Desktop opsional, tidak wajib)
+
+<details>
+<summary>📦 Install Docker Engine di Linux (Ubuntu/Debian)</summary>
+
+```bash
+# Hapus paket Docker versi lama (jika ada)
+for pkg in docker.io docker-doc docker-compose docker-compose-v2 podman-docker containerd runc; do
+  sudo apt-get remove -y $pkg
+done
+
+# Setup repository resmi Docker
+sudo apt-get update
+sudo apt-get install -y ca-certificates curl
+sudo install -m 0755 -d /etc/apt/keyrings
+sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
+sudo chmod a+r /etc/apt/keyrings/docker.asc
+
+echo \
+  "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu \
+  $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | \
+  sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+
+# Install Docker Engine, CLI, dan Compose plugin
+sudo apt-get update
+sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+
+# Jalankan Docker tanpa sudo (opsional, perlu logout/login ulang setelahnya)
+sudo usermod -aG docker $USER
+
+# Verifikasi instalasi
+docker --version
+docker compose version
+```
+
+> 💡 Untuk distro lain (Fedora, CentOS, Arch, dll.), ikuti panduan resmi di [docs.docker.com/engine/install](https://docs.docker.com/engine/install/).
+>
+> ⚠️ Perintah `docker-compose up -d` di bawah ini juga bisa ditulis sebagai `docker compose up -d` (tanpa strip) jika menggunakan Docker Compose plugin v2 di Linux.
+
+</details>
 
 ### Langkah 1 — Clone Semua Repository Sejajar
 
@@ -207,11 +302,13 @@ cd football-app
 # Clone repo utama ini
 git clone <repo-url-utama> football-community-be
 
-# Clone semua service
+# Clone semua service & frontend
+git clone <repo-frontend-mobile> kickoff
 git clone <repo-api-gateway> api-gateway
 git clone <repo-auth-service> auth-service
 git clone <repo-football-service> football-service
 git clone <repo-forum-service> forum-service
+git clone <repo-report-service> report-service
 git clone <repo-notification-service> notification-service
 
 # Masuk ke repo utama untuk menjalankan Docker
@@ -223,22 +320,26 @@ cd football-community-be
 Setiap repositori service memiliki file `.env.example`. Masuk ke masing-masing folder dan salin menjadi `.env`:
 
 ```bash
-# Contoh (Linux/Mac)
+# Linux/Mac
+cp ../kickoff/.env.example ../kickoff/.env
 cp ../api-gateway/.env.example ../api-gateway/.env
 cp ../auth-service/.env.example ../auth-service/.env
 cp ../football-service/.env.example ../football-service/.env
 cp ../forum-service/.env.example ../forum-service/.env
+cp ../report-service/.env.example ../report-service/.env
 cp ../notification-service/.env.example ../notification-service/.env
 
-# Contoh (Windows PowerShell)
+# Windows PowerShell
+Copy-Item ../kickoff/.env.example ../kickoff/.env
 Copy-Item ../api-gateway/.env.example ../api-gateway/.env
 Copy-Item ../auth-service/.env.example ../auth-service/.env
 Copy-Item ../football-service/.env.example ../football-service/.env
 Copy-Item ../forum-service/.env.example ../forum-service/.env
+Copy-Item ../report-service/.env.example ../report-service/.env
 Copy-Item ../notification-service/.env.example ../notification-service/.env
 ```
 
-Kemudian **edit setiap file `.env`** sesuai panduan di bagian [Konfigurasi Environment](#-konfigurasi-environment).
+Kemudian **edit setiap file `.env`** sesuai panduan di bagian [Konfigurasi Environment](#️-konfigurasi-environment).
 
 ### Langkah 3 — Jalankan Semua Service
 
@@ -249,20 +350,10 @@ docker-compose up -d
 Docker akan menjalankan service sesuai urutan dependensinya secara otomatis:
 
 ```
-MySQL + MongoDB + RabbitMQ  →  Auth + Football + Forum + Notification  →  API Gateway
+MySQL + MongoDB + RabbitMQ  →  Auth + Football + Forum + Report + Notification  →  API Gateway  →  Expo Mobile
 ```
 
-### Langkah 5 — Jalankan Database Migration
-
-Setelah container berjalan, deploy migrasi Prisma untuk auth-service:
-
-```bash
-docker exec -it football-auth sh -c "npx prisma migrate deploy"
-```
-
-> ℹ️ **MongoDB** sudah dikonfigurasi dengan replica set (`rs0`) yang diperlukan oleh Prisma. Inisialisasi replica set dijalankan otomatis oleh container `mongodb-init`.
-
-### Langkah 6 — Verifikasi
+### Langkah 4 — Verifikasi
 
 ```bash
 curl http://localhost:3000/health
@@ -280,9 +371,7 @@ Akses RabbitMQ Management UI: **http://localhost:15672**
 
 ## ⚙️ Konfigurasi Environment
 
-> ⚠️ **PENTING — `INTERNAL_SECRET`:** Nilai ini **harus identik** di semua file `.env` (api-gateway, auth-service, football-service, forum-service, notification-service). Nilai ini digunakan sebagai kunci keamanan komunikasi antar service internal.
-
----
+> ⚠️ **PENTING — `INTERNAL_SECRET`:** Nilai ini **harus identik** di semua file `.env` (api-gateway, auth-service, football-service, forum-service, report-service, notification-service). Nilai ini digunakan sebagai kunci keamanan komunikasi antar service internal.
 
 ### API Gateway (`api-gateway/.env`)
 
@@ -294,10 +383,9 @@ Akses RabbitMQ Management UI: **http://localhost:15672**
 | `AUTH_SERVICE_URL` | `http://auth-service:3001` | URL auth service (nama Docker container) |
 | `FOOTBALL_SERVICE_URL` | `http://football-service:3002` | URL football service |
 | `FORUM_SERVICE_URL` | `http://forum-service:3003` | URL forum service |
+| `REPORT_SERVICE_URL` | `http://report-service:3005` | URL report service |
 
----
-
-### Auth Service (`services/auth-service/.env`)
+### Auth Service (`auth-service/.env`)
 
 | Variabel | Contoh | Keterangan |
 |---|---|---|
@@ -314,9 +402,7 @@ Akses RabbitMQ Management UI: **http://localhost:15672**
 | `CLOUDINARY_API_SECRET` | `cloudinary_secret_xxx` | API Secret Cloudinary |
 | `RABBITMQ_URL` | `amqp://admin:admin123@rabbitmq:5672` | URL koneksi RabbitMQ |
 
----
-
-### Football Service (`services/football-service/.env`)
+### Football Service (`football-service/.env`)
 
 | Variabel | Contoh | Keterangan |
 |---|---|---|
@@ -329,9 +415,7 @@ Akses RabbitMQ Management UI: **http://localhost:15672**
 
 > 💡 Daftar gratis untuk `FOOTBALL_API_KEY` di: https://www.football-data.org/client/register
 
----
-
-### Forum Service (`services/forum-service/.env`)
+### Forum Service (`forum-service/.env`)
 
 | Variabel | Contoh | Keterangan |
 |---|---|---|
@@ -341,9 +425,15 @@ Akses RabbitMQ Management UI: **http://localhost:15672**
 | `RABBITMQ_URL` | `amqp://admin:admin123@rabbitmq:5672` | URL koneksi RabbitMQ |
 | `AUTH_SERVICE_URL` | `http://auth-service:3001` | URL auth service |
 
----
+### Report Service (`report-service/.env`)
 
-### Notification Service (`services/notification-service/.env`)
+| Variabel | Contoh | Keterangan |
+|---|---|---|
+| `PORT` | `3005` | Port aplikasi |
+| `DATABASE_URL` | `mongodb://mongodb:27017/report_db?replicaSet=rs0` | Koneksi MongoDB |
+| `INTERNAL_SECRET` | `internal_secret_kuat` | **Harus sama di semua service** |
+
+### Notification Service (`notification-service/.env`)
 
 | Variabel | Contoh | Keterangan |
 |---|---|---|
@@ -364,11 +454,13 @@ Akses RabbitMQ Management UI: **http://localhost:15672**
 
 | Service | Port | Akses dari Klien |
 |---|---|---|
-| **API Gateway** | `3000` | ✅ **Ya — satu-satunya endpoint untuk klien** |
+| Frontend Mobile (Expo) | `8081` | ✅ Ya — developer/emulator |
+| API Gateway | `3000` | ✅ Ya — satu-satunya endpoint API untuk klien |
 | Auth Service | `3001` | ❌ Internal saja |
 | Football Service | `3002` | ❌ Internal saja |
 | Forum Service | `3003` | ❌ Internal saja |
 | Notification Service | `3004` | ❌ Internal saja |
+| Report Service | `3005` | ❌ Internal saja |
 | MySQL | `3306` | ❌ Internal saja |
 | MongoDB | `27017` | ❌ Internal saja |
 | RabbitMQ AMQP | `5672` | ❌ Internal saja |
@@ -444,11 +536,17 @@ cd ../football-service && bun install && bun run dev
 # Terminal 3 — Forum Service
 cd ../forum-service && bun install && bun run dev
 
-# Terminal 4 — Notification Service
+# Terminal 4 — Report Service
+cd ../report-service && bun install && bun run dev
+
+# Terminal 5 — Notification Service
 cd ../notification-service && bun install && bun run dev
 
-# Terminal 5 — API Gateway
+# Terminal 6 — API Gateway
 cd ../api-gateway && bun install && bun run dev
+
+# Terminal 7 — Frontend Mobile
+cd ../kickoff && bun install && bun run start
 ```
 
 > ⚠️ **Saat development lokal,** ubah URL service di `.env` dari nama container Docker ke `localhost`:
@@ -456,6 +554,7 @@ cd ../api-gateway && bun install && bun run dev
 > AUTH_SERVICE_URL=http://localhost:3001
 > FOOTBALL_SERVICE_URL=http://localhost:3002
 > FORUM_SERVICE_URL=http://localhost:3003
+> REPORT_SERVICE_URL=http://localhost:3005
 > ```
 
 ---

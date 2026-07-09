@@ -53,6 +53,7 @@ robot tests/
 robot tests/auth_service.robot
 robot tests/forum_service.robot
 robot tests/football_service.robot
+robot tests/report_service.robot
 ```
 
 ## 📊 Melihat Hasil Test
@@ -61,5 +62,3 @@ Setelah perintah selesai berjalan, Robot Framework akan menghasilkan 3 file di d
 - `report.html` — Ringkasan hasil test (Lulus/Gagal) dengan tampilan UI yang mudah dibaca. Buka di browser Anda.
 - `log.html` — Log eksekusi yang sangat detail, langkah demi langkah. Cocok untuk menelusuri di mana letak errornya.
 - `output.xml` — Data mentah hasil test (biasanya digunakan oleh CI/CD pipeline).
-
-> ℹ️ File-file laporan ini sudah diatur agar diabaikan oleh Git melalui `.gitignore`.

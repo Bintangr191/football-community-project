@@ -107,22 +107,6 @@ services:
         ' || true
       "
 
-  # =============================================================
-  # CATATAN: Semua service di bawah menggunakan path relatif ke
-  # folder parent (../) karena masing-masing adalah repo terpisah.
-  #
-  # Struktur folder yang diharapkan:
-  #   parent-folder/
-  #   ├── football-community-be/   ← repo ini (berisi docker-compose.yml)
-  #   ├── api-gateway/
-  #   ├── auth-service/
-  #   ├── football-service/
-  #   ├── forum-service/
-  #   └── notification-service/
-  #
-  # Pastikan semua repo sudah di-clone sebelum menjalankan docker-compose up
-  # =============================================================
-
   auth-service:
     build:
       context: ../auth-service
@@ -244,8 +228,60 @@ services:
     networks:
       - football-network
 
+  report-service:
+    build:
+      context: ../report-service
+      dockerfile: Dockerfile
+
+    container_name: report-service
+
+    restart: always
+
+    depends_on:
+      mongodb:
+        condition: service_healthy
+
+    ports:
+      - "3005:3005"
+
+    env_file:
+      - ../report-service/.env
+
+    networks:
+      - football-network
+
+  expo-mobile:
+    build:
+      context: ../kickoff
+      dockerfile: Dockerfile
+
+    container_name: football-expo-mobile
+
+    restart: unless-stopped
+
+    depends_on:
+      api-gateway:
+        condition: service_started
+
+    ports:
+      - "8081:8081"
+      - "19000:19000"
+      - "19001:19001"
+      - "19002:19002"
+
+    env_file:
+      - ../kickoff/.env
+
+    networks:
+      - football-network
+
+    stdin_open: true
+    tty: true
+
+
 networks:
   football-network:
+    name: football-network
     driver: bridge
 
 volumes:
