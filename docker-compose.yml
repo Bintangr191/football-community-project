@@ -252,7 +252,7 @@ services:
 
   expo-mobile:
     build:
-      context: ../kickoff
+      context: ../football-community-mobile
       dockerfile: Dockerfile
 
     container_name: football-expo-mobile
@@ -270,7 +270,7 @@ services:
       - "19002:19002"
 
     env_file:
-      - ../kickoff/.env
+      - ../football-community-mobile/.env
 
     networks:
       - football-network
