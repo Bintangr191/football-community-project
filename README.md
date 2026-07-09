@@ -1,6 +1,24 @@
 # ⚽ Football Community App
 
-Backend untuk aplikasi komunitas sepak bola berbasis **microservice architecture**. Setiap fitur besar dipisah menjadi service mandiri yang berkomunikasi melalui sebuah **API Gateway** terpusat.
+Backend & orkestrasi untuk aplikasi komunitas sepak bola berbasis **microservice architecture**. Setiap fitur besar dipisah menjadi service mandiri (polyrepo) yang berkomunikasi melalui sebuah **API Gateway** terpusat.
+
+> 📌 **Repo ini adalah pusat/orkestrasi dari seluruh proyek.** Cukup buka repo ini untuk menemukan link ke semua repositori lain (frontend, tiap service, dan testing) — lihat tabel di bawah.
+
+---
+
+## 🔗 Repository Index
+
+| No | Repositori | Peran | Link |
+|---|---|---|---|
+| 1 | **football-community-project** | Repo utama — orkestrasi Docker Compose, dokumentasi arsitektur & integration test | *(kamu di sini)* |
+| 2 | kickoff | Frontend Mobile (React Native + Expo) | https://github.com/Bintangr191/kickoff |
+| 3 | api-gateway | API Gateway — entry point & traffic router | https://github.com/Bintangr191/api-gateway |
+| 4 | auth-service | Autentikasi, profil, biometric | https://github.com/Bintangr191/auth-service |
+| 5 | football-service | Data liga, tim, jadwal, favorit | https://github.com/Bintangr191/football-service |
+| 6 | forum-service | Post, komentar, voting | https://github.com/Bintangr191/forum-service |
+| 7 | report-service | Laporan post/komentar/pengguna | https://github.com/Bintangr191/report-service |
+| 8 | notification-service | Email OTP via RabbitMQ | https://github.com/Bintangr191/notification-service |
+| 9 | football-community-testsappium | Automated testing mobile app (Appium) | https://github.com/Bintangr191/football-community-testsappium |
 
 ---
 
@@ -82,14 +100,15 @@ Struktur folder yang diharapkan saat di-clone di komputer Anda:
 
 ```text
 parent-folder/
-├── football-community-be/      ← Repositori UTAMA ini (docker-compose & tests)
+├── football-community-project/ ← Repositori UTAMA ini (docker-compose & tests)
 ├── kickoff/                    ← Repositori Frontend Mobile (Expo)
 ├── api-gateway/                ← Repositori API Gateway
 ├── auth-service/               ← Repositori Auth Service
 ├── football-service/           ← Repositori Football Service
 ├── forum-service/              ← Repositori Forum Service
 ├── report-service/             ← Repositori Report Service
-└── notification-service/       ← Repositori Notification Service
+├── notification-service/       ← Repositori Notification Service
+└── football-community-testsappium/  ← Repositori Automated Testing (Appium)
 ```
 
 > Semua file `.env` service berada langsung di root masing-masing repo (`auth-service/.env`, bukan `auth-service/services/.env`).
@@ -99,6 +118,8 @@ parent-folder/
 ## 🧩 Deskripsi Service
 
 ### 🔐 Auth Service (`:3001`)
+
+Repo: [auth-service](https://github.com/Bintangr191/auth-service)
 
 Mengelola seluruh siklus autentikasi pengguna.
 
@@ -132,6 +153,8 @@ Mengelola seluruh siklus autentikasi pengguna.
 
 ### ⚽ Football Service (`:3002`)
 
+Repo: [football-service](https://github.com/Bintangr191/football-service)
+
 Menyediakan data sepak bola dari API eksternal dan menyimpan preferensi pengguna.
 
 - **Database:** MongoDB (via Prisma)
@@ -157,6 +180,8 @@ Menyediakan data sepak bola dari API eksternal dan menyimpan preferensi pengguna
 ---
 
 ### 💬 Forum Service (`:3003`)
+
+Repo: [forum-service](https://github.com/Bintangr191/forum-service)
 
 Mengelola komunitas diskusi dengan fitur post, komentar, voting, dan penjadwalan post.
 
@@ -188,6 +213,8 @@ Mengelola komunitas diskusi dengan fitur post, komentar, voting, dan penjadwalan
 
 ### 📨 Notification Service (`:3004`)
 
+Repo: [notification-service](https://github.com/Bintangr191/notification-service)
+
 Mengirim notifikasi email (OTP) melalui antrian RabbitMQ. Service ini **tidak dipanggil langsung oleh klien** — ia mendengarkan pesan dari queue RabbitMQ yang dikirim oleh auth-service, kemudian mengirimkan email lewat Gmail SMTP.
 
 - **Transport:** Nodemailer (SMTP Gmail)
@@ -196,6 +223,8 @@ Mengirim notifikasi email (OTP) melalui antrian RabbitMQ. Service ini **tidak di
 ---
 
 ### 📊 Report Service (`:3005`)
+
+Repo: [report-service](https://github.com/Bintangr191/report-service)
 
 Mengelola laporan terkait postingan, komentar, atau pengguna dalam komunitas.
 
@@ -221,6 +250,8 @@ Mengelola laporan terkait postingan, komentar, atau pengguna dalam komunitas.
 ---
 
 ### 🚦 API Gateway (`:3000`)
+
+Repo: [api-gateway](https://github.com/Bintangr191/api-gateway)
 
 Satu-satunya entry point bagi klien. Bertanggung jawab atas:
 
@@ -300,19 +331,20 @@ mkdir football-app
 cd football-app
 
 # Clone repo utama ini
-git clone <repo-url-utama> football-community-be
+git clone https://github.com/Bintangr191/football-community-project.git
 
 # Clone semua service & frontend
-git clone <repo-frontend-mobile> kickoff
-git clone <repo-api-gateway> api-gateway
-git clone <repo-auth-service> auth-service
-git clone <repo-football-service> football-service
-git clone <repo-forum-service> forum-service
-git clone <repo-report-service> report-service
-git clone <repo-notification-service> notification-service
+git clone https://github.com/Bintangr191/kickoff.git
+git clone https://github.com/Bintangr191/api-gateway.git
+git clone https://github.com/Bintangr191/auth-service.git
+git clone https://github.com/Bintangr191/football-service.git
+git clone https://github.com/Bintangr191/forum-service.git
+git clone https://github.com/Bintangr191/report-service.git
+git clone https://github.com/Bintangr191/notification-service.git
+git clone https://github.com/Bintangr191/football-community-testsappium.git
 
 # Masuk ke repo utama untuk menjalankan Docker
-cd football-community-be
+cd football-community-project
 ```
 
 ### Langkah 2 — Siapkan File Environment
@@ -510,6 +542,12 @@ Hasil test tersedia di:
 - `integration-tests/report.html` — Ringkasan test
 - `integration-tests/log.html` — Log detail per test case
 
+### Automated Mobile Testing (Appium)
+
+Pengujian end-to-end pada aplikasi mobile (Frontend `kickoff`) dilakukan secara terpisah menggunakan Appium. Lihat repositori:
+
+📌 **[football-community-testsappium](https://github.com/Bintangr191/football-community-testsappium)**
+
 ---
 
 ## 💻 Development (Tanpa Docker — Mode Manual)
@@ -631,6 +669,9 @@ GET /football/leagues  →  API Gateway (:3000)
 | Email Transport | Nodemailer (Gmail SMTP) |
 | File Storage | Cloudinary |
 | External Football API | football-data.org, thesportsdb.com |
+| Automated Mobile Testing | Appium ([football-community-testsappium](https://github.com/Bintangr191/football-community-testsappium)) |
 | Containerization | Docker & Docker Compose |
 | Integration Testing | Robot Framework (Python) |
 | Language | TypeScript |
+
+---
