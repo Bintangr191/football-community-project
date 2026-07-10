@@ -11,7 +11,7 @@ Backend & orkestrasi untuk aplikasi komunitas sepak bola berbasis **microservice
 | No | Repositori | Peran | Link |
 |---|---|---|---|
 | 1 | **football-community-project** | Repo utama — orkestrasi Docker Compose, dokumentasi arsitektur & integration test | *(kamu di sini)* |
-| 2 | kickoff | Frontend Mobile (React Native + Expo) | https://github.com/Bintangr191/kickoff |
+| 2 | kickoff | Frontend Mobile (React Native + Expo) | https://github.com/Bintangr191/football-community-mobile |
 | 3 | api-gateway | API Gateway — entry point & traffic router | https://github.com/Bintangr191/api-gateway |
 | 4 | auth-service | Autentikasi, profil, biometric | https://github.com/Bintangr191/auth-service |
 | 5 | football-service | Data liga, tim, jadwal, favorit | https://github.com/Bintangr191/football-service |
